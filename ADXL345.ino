@@ -17,6 +17,18 @@ float AccelMaxY = 0;
 float AccelMinZ = 0;
 float AccelMaxZ = 0;
 
+String getFilename() {
+    int fileNum = 1;
+    String filename;
+    do {
+        char name[20];
+        sprintf(name, "FLIGHT%03d.csv", fileNum);
+        filename = name;
+        fileNum++;
+    } while (SD.exists(filename.c_str()));
+    return filename;
+}
+
 void setup(void)
 {
   Serial.begin(9600);
@@ -41,11 +53,14 @@ if (!SD.begin(BUILTIN_SDCARD)) {
 }
 Serial.println("initialization done.");
 
-myFile = SD.open("work_11_10.txt", FILE_WRITE);
+String filename = getFilename();
+
+myFile = SD.open(filename.c_str(), FILE_WRITE);
+//myFile = SD.open("work_11_10.txt", FILE_WRITE);
 // if the file opened okay, write to it:
 if (myFile) {
   Serial.print("Writing to test.txt...");
-  myFile.println("testing 1, 2, 3.");
+  myFile.println("millis, accel_x (m/s^2), accel_y (m/s^2), accel_z (m/s^2)");
 } else {
   // if the file didn't open, print an error:
   Serial.println("error opening test.txt");
@@ -75,10 +90,18 @@ void loop(void)
     Serial.println(" m/s^2");
 
 /* Print to myFile */
-    myFile.print("X: "); myFile.print(accelEvent.acceleration.x);
-    myFile.print("  Y: "); myFile.print(accelEvent.acceleration.y);
-    myFile.print("  Z: "); myFile.print(accelEvent.acceleration.z);
-    myFile.println(" m/s^2");
+   // myFile.print("X: "); myFile.print(accelEvent.acceleration.x);
+   // myFile.print("  Y: "); myFile.print(accelEvent.acceleration.y);
+   // myFile.print("  Z: "); myFile.print(accelEvent.acceleration.z);
+   // myFile.println(" m/s^2");
+
+    myFile.print(millis());
+    myFile.print(",");
+    myFile.print(accelEvent.acceleration.x);
+    myFile.print(",");
+    myFile.print(accelEvent.acceleration.y);
+    myFile.print(",");
+    myFile.println(accelEvent.acceleration.z);
     
     count++;
 
