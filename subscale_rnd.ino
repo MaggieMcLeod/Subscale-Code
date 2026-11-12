@@ -8,6 +8,7 @@
 #define SEALEVELPRESSURE_HPA (1013.25)
 
 File myFile;
+File myLog;
 int count = 0;
 
 Adafruit_BMP5xx bmp; // Create BMP5xx object
@@ -35,23 +36,67 @@ String getFilename() {
     return filename;
 }
 
+String getLogname() {
+    int logNum = 1;
+    String logname;
+    do {
+        char name[20];
+        sprintf(name, "LOG%03d.csv", logNum);
+        logname = name;
+        logNum++;
+    } while (SD.exists(logname.c_str()));
+    return logname;
+}
+
 void setup(void)
 {
   Serial.begin(9600);
-  while (!Serial) delay(10);
-  Serial.println("ADXL345 Accelerometer Calibration");
-  Serial.println("");
-  Wire1.begin();
+  delay(100);
+
+  digitalWrite(LED_BUILTIN, HIGH);
+  delay(600);
+  digitalWrite(LED_BUILTIN, LOW);
+  delay(600);
+
+  Serial.print("Initializing SD card...");
+
+  if (!SD.begin(BUILTIN_SDCARD)) {
+    Serial.println("initialization failed!");
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(200);
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(200);
+    while (1);
+  }
+  Serial.println("initialization done.");
+  digitalWrite(LED_BUILTIN, HIGH);
+  delay(600);
+  digitalWrite(LED_BUILTIN, LOW);
+  delay(600);  
+
+  String logname = getLogname();
+  myLog = SD.open(logname.c_str(), FILE_WRITE);
+  if (myLog) {
+    Serial.println("Writing to log.txt...");
+    myLog.println("hello this is where we dump everything printed to serial monitor!");
+  }
+
+  myLog.flush();
 
 /* Initialize the BMP581*/
   if (!bmp.begin(BMP5XX_ALTERNATIVE_ADDRESS, &Wire)) {
   // For SPI mode (uncomment the line below and comment out the I2C line above):
   // if (!bmp.begin(BMP5XX_CS_PIN, &SPI)) {
     Serial.println(F("Could not find a valid BMP5xx sensor, check wiring!"));
+    myLog.println(F("Could not find a valid BMP5xx sensor, check wiring!"));
+    myLog.flush();
     while (1) delay(10);
   }
   Serial.println(F("BMP5xx found!"));
   Serial.println();
+  myLog.println(F("BMP5xx found!"));
+  myLog.println();
+  myLog.flush();
 
   /* Oversampling Settings:
   * Higher oversampling = better accuracy but slower readings */
@@ -77,20 +122,20 @@ void setup(void)
 
 
 /* Initialise the ADXL345 */
+Serial.println("ADXL345 Accelerometer Calibration");
+myLog.println("ADXL345 Accelerometer Calibration");
+myLog.flush();
+Serial.println("");
+Wire1.begin();
 if(!accel.begin(0x53, &Wire1))
   {
 /* There was a problem detecting the ADXL345 ... check your connections */
     Serial.println("Ooops, no ADXL345 detected ... Check your wiring!");
+    myLog.println("Ooops, no ADXL345 detected ... Check your wiring!");
+    myLog.flush();
     while(1);
     }
 
-Serial.print("Initializing SD card...");
-
-if (!SD.begin(BUILTIN_SDCARD)) {
-  Serial.println("initialization failed!");
-  while (1);
-}
-Serial.println("initialization done.");
 
 String filename = getFilename();
 
@@ -98,13 +143,17 @@ myFile = SD.open(filename.c_str(), FILE_WRITE);
 //myFile = SD.open("work_11_10.txt", FILE_WRITE);
 // if the file opened okay, write to it:
 if (myFile) {
-  Serial.print("Writing to test.txt...");
+  Serial.print("Writing to flightxxx.csv...");
+  myLog.println("Writing to flightxxx.csv...");
   myFile.println("millis, temp (Celsius), pressure (hPa), altitude (m), accel_x (m/s^2), accel_y (m/s^2), accel_z (m/s^2)");
 } else {
   // if the file didn't open, print an error:
-  Serial.println("error opening test.txt");
-}
+  Serial.println("error opening flightxxx.csv");
+  myLog.println("error opening flightxxx.csv");
 
+myLog.flush();
+
+}
 }
 
 void loop(void)
@@ -125,7 +174,6 @@ void loop(void)
   Serial.print(F("  Approx. Altitude = "));
   Serial.print(bmp.readAltitude(SEALEVELPRESSURE_HPA));
   Serial.println(F(" m"));
-
 
 /* Get a new ADXL345 sensor event */
     sensors_event_t accelEvent;
@@ -165,11 +213,26 @@ void loop(void)
     myFile.print(accelEvent.acceleration.y);
     myFile.print(",");
     myFile.println(accelEvent.acceleration.z);
+
+    myLog.print(millis());
+    myLog.print(",");
+    myLog.print(bmp.temperature);
+    myLog.print(",");
+    myLog.print(bmp.pressure);
+    myLog.print(",");
+    myLog.print(bmp.readAltitude(SEALEVELPRESSURE_HPA));
+    myLog.print(",");
+    myLog.print(accelEvent.acceleration.x);
+    myLog.print(",");
+    myLog.print(accelEvent.acceleration.y);
+    myLog.print(",");
+    myLog.println(accelEvent.acceleration.z);
     
     count++;
 
     if (count >= 10) {
         myFile.flush();
+        myLog.flush();
         count = 0;
     }
 
