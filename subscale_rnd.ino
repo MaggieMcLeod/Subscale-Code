@@ -90,7 +90,7 @@ void setup(void)
     Serial.println(F("Could not find a valid BMP5xx sensor, check wiring!"));
     myLog.println(F("Could not find a valid BMP5xx sensor, check wiring!"));
     myLog.flush();
-    while (1) delay(10);
+    delay(10);
   }
   Serial.println(F("BMP5xx found!"));
   Serial.println();
@@ -133,7 +133,7 @@ if(!accel.begin(0x53, &Wire1))
     Serial.println("Ooops, no ADXL345 detected ... Check your wiring!");
     myLog.println("Ooops, no ADXL345 detected ... Check your wiring!");
     myLog.flush();
-    while(1);
+    delay(10);
     }
 
 
